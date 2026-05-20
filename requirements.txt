@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+yfinance
+pandas
+numpy
+ta
+feedparser
+vaderSentiment
+pydantic>=2
+httpx
+python-dateutil
+pytest

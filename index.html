@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indian Stock Recommendation Engine</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 12px 32px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            color: #333;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .stocks-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .stock-card {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .stock-card:hover {
+            background: #fff;
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+        }
+
+        .stock-ticker {
+            font-weight: 700;
+            color: #333;
+            font-size: 13px;
+        }
+
+        .stock-score {
+            font-size: 12px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .stock-timeframe {
+            font-size: 10px;
+            color: #999;
+            font-weight: 500;
+            margin-top: 2px;
+        }
+
+        .verdict-badge {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-top: 4px;
+        }
+
+        .category-section {
+            margin-bottom: 24px;
+        }
+
+        .category-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            padding: 8px 0;
+        }
+
+        .progress-wrap {
+            background: #e5e7eb;
+            border-radius: 8px;
+            height: 10px;
+            overflow: hidden;
+            margin: 10px 0 6px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 8px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .progress-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 16px;
+        }
+
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-weight: 600;
+            display: none;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            border-left: 4px solid #c33;
+        }
+
+        .result {
+            display: none;
+        }
+
+        .verdict-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .verdict-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .verdict-text {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .verdict-subtext {
+            font-size: 16px;
+            opacity: 0.95;
+        }
+
+        .confidence-bar {
+            background: rgba(255, 255, 255, 0.3);
+            height: 8px;
+            border-radius: 4px;
+            margin-top: 16px;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .card h3 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-icon {
+            font-size: 20px;
+        }
+
+        .score {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .highlights {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .highlight-item {
+            margin-bottom: 6px;
+            padding-left: 16px;
+            position: relative;
+        }
+
+        .highlight-item:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+        }
+
+        .reason {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 16px;
+            border-radius: 4px;
+            color: #856404;
+            font-size: 14px;
+            line-height: 1.6;
+            display: none;
+        }
+
+        .horizons {
+            background: #f0f0f0;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+
+        .horizons h4 {
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .horizon-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 13px;
+            color: #666;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .horizon-item:last-child {
+            border-bottom: none;
+        }
+
+        .horizon-tag {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 12px;
+            letter-spacing: 0.3px;
+        }
+        .tag-strongly-bullish  { background: #d1fae5; color: #065f46; }
+        .tag-bullish           { background: #bbf7d0; color: #166534; }
+        .tag-mildly-bullish    { background: #dcfce7; color: #15803d; }
+        .tag-neutral           { background: #e5e7eb; color: #374151; }
+        .tag-mildly-bearish    { background: #fee2e2; color: #b45309; }
+        .tag-bearish           { background: #fecaca; color: #991b1b; }
+        .tag-strongly-bearish  { background: #fca5a5; color: #7f1d1d; }
+
+        .meta {
+            font-size: 12px;
+            color: #999;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            .verdict-text {
+                font-size: 28px;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📈 Stock Recommendation Engine</h1>
+        <p class="subtitle">Indian NSE/BSE stocks • Fundamentals + Technicals + News Sentiment</p>
+
+        <div class="input-group">
+            <input
+                type="text"
+                id="stockInput"
+                placeholder="Enter stock name (e.g., Reliance, TCS, HDFCBANK)"
+                autocomplete="off"
+            >
+            <button onclick="getRecommendation()">Analyze</button>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('single')">Single Stock</button>
+            <button class="tab" onclick="switchTab('all')">Nifty-100 Analysis</button>
+        </div>
+
+        <div class="loading" id="loading">⏳ Fetching data and analyzing...</div>
+        <div class="error" id="error"></div>
+
+        <div id="single-tab" class="tab-content active">
+            <div class="result" id="result">
+            <div class="verdict-box" id="verdictBox">
+                <div class="verdict-label">Recommendation</div>
+                <div class="verdict-text" id="verdict">–</div>
+                <div class="verdict-subtext" id="timeframe">–</div>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" id="confidenceFill" style="width: 0%"></div>
+                </div>
+                <div class="verdict-subtext" style="margin-top: 8px;">
+                    Confidence: <strong id="confidence">–</strong>
+                </div>
+            </div>
+
+            <div class="reason" id="reason"></div>
+
+            <div class="grid">
+                <div class="card">
+                    <h3><span class="card-icon">📊</span> Fundamental</h3>
+                    <div class="score" id="fundScore">–</div>
+                    <div class="highlights" id="fundHighlights"></div>
+                </div>
+                <div class="card">
+                    <h3><span class="card-icon">📈</span> Technical</h3>
+                    <div class="score" id="techScore">–</div>
+                    <div class="highlights" id="techHighlights"></div>
+                </div>
+                <div class="card">
+                    <h3><span class="card-icon">📰</span> News Sentiment</h3>
+                    <div class="score" id="newsScore">–</div>
+                    <div class="highlights" id="newsHighlights"></div>
+                </div>
+            </div>
+
+            <div class="horizons">
+                <h4>📅 Score by Timeframe</h4>
+                <div class="horizon-item">
+                    <span>Short term (1–4 weeks)</span>
+                    <span><span id="shortScore">–</span> (<span id="shortConf">–</span>%)</span>
+                </div>
+                <div class="horizon-item">
+                    <span>Medium term (1–6 months)</span>
+                    <span><span id="mediumScore">–</span> (<span id="mediumConf">–</span>%)</span>
+                </div>
+                <div class="horizon-item">
+                    <span>Long term (6–12 months)</span>
+                    <span><span id="longScore">–</span> (<span id="longConf">–</span>%)</span>
+                </div>
+            </div>
+
+            <div class="meta">
+                <strong id="ticker">–</strong> •
+                <span id="timestamp">–</span>
+            </div>
+            </div>
+        </div>
+
+        <div id="all-tab" class="tab-content">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                <div>
+                    <span style="font-size: 13px; color: #666;">Last updated: </span>
+                    <span id="allLastUpdated" style="font-size: 13px; font-weight: 600; color: #333;">Never</span>
+                </div>
+                <button id="refreshBtn" onclick="refreshAllStocks()" style="padding: 10px 20px; font-size: 14px;">
+                    🔄 Refresh List
+                </button>
+            </div>
+            <div id="progressSection" style="display: none;">
+                <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+                <div class="progress-label" id="progressLabel">Starting…</div>
+            </div>
+            <div id="allResults">
+                <div style="text-align: center; color: #999; padding: 40px;">Click "Refresh List" to load the Nifty-100 analysis.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const apiBase = '';
+
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.getElementById('single-tab').classList.remove('active');
+            document.getElementById('all-tab').classList.remove('active');
+
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+
+            // Show selected tab
+            if (tabName === 'single') {
+                document.getElementById('single-tab').classList.add('active');
+                document.querySelectorAll('.tab')[0].classList.add('active');
+            } else if (tabName === 'all') {
+                document.getElementById('all-tab').classList.add('active');
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                loadCachedStocks();
+            }
+        }
+
+        function loadCachedStocks() {
+            const cached = localStorage.getItem('nifty100_cache');
+            if (!cached) return;
+            try {
+                const data = JSON.parse(cached);
+                if (!data.results) return;
+                displayAllStocks(data);
+                setLastUpdated(data.timestamp);
+                if (data.type === 'partial') {
+                    document.getElementById('allLastUpdated').textContent +=
+                        ' — partial (' + data.total_analyzed + ' stocks, refresh for full results)';
+                }
+            } catch (e) { /* stale/corrupt cache — ignore */ }
+        }
+
+        function setLastUpdated(isoTimestamp) {
+            const d = new Date(isoTimestamp);
+            document.getElementById('allLastUpdated').textContent =
+                d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) +
+                ' ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function refreshAllStocks() {
+            const resultsDiv  = document.getElementById('allResults');
+            const progressSec = document.getElementById('progressSection');
+            const progressBar = document.getElementById('progressBar');
+            const progressLbl = document.getElementById('progressLabel');
+            const refreshBtn  = document.getElementById('refreshBtn');
+
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = '⏳ Refreshing…';
+            progressSec.style.display = 'block';
+            progressBar.style.width = '0%';
+            progressLbl.textContent = 'Connecting…';
+            resultsDiv.innerHTML = '';
+
+            const liveData = { results: {}, errors: [], total_analyzed: 0 };
+            const es = new EventSource(`${apiBase}/nifty100/stream`);
+
+            function savePartialCache() {
+                localStorage.setItem('nifty100_cache', JSON.stringify({
+                    type: 'partial',
+                    timestamp: new Date().toISOString(),
+                    results: liveData.results,
+                    total_analyzed: liveData.total_analyzed,
+                    errors: liveData.errors,
+                }));
+            }
+
+            es.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+
+                if (msg.type === 'progress') {
+                    const pct = Math.round((msg.done / msg.total) * 100);
+                    progressBar.style.width = pct + '%';
+                    progressLbl.textContent = `Analyzing… ${msg.done} / ${msg.total} stocks (${pct}%)`;
+
+                    if (msg.stock) {
+                        liveData.results[msg.stock.verdict] = liveData.results[msg.stock.verdict] || [];
+                        liveData.results[msg.stock.verdict].push(msg.stock);
+                        liveData.total_analyzed++;
+                        appendStockCard(msg.stock);
+                        savePartialCache();
+                    }
+                }
+
+                if (msg.type === 'done') {
+                    es.close();
+                    localStorage.setItem('nifty100_cache', JSON.stringify(msg));
+                    setLastUpdated(msg.timestamp);
+                    progressSec.style.display = 'none';
+                    refreshBtn.disabled = false;
+                    refreshBtn.textContent = '🔄 Refresh List';
+                }
+            };
+
+            es.onerror = () => {
+                es.close();
+                if (!liveData.total_analyzed) {
+                    resultsDiv.innerHTML = '<div style="color:#c33;padding:20px;">Connection error — please try again.</div>';
+                } else {
+                    savePartialCache();
+                }
+                progressSec.style.display = 'none';
+                refreshBtn.disabled = false;
+                refreshBtn.textContent = '🔄 Refresh List';
+            };
+        }
+
+        const VERDICT_ORDER = ['Strong Buy', 'Buy', 'Neutral', 'Sell', 'Strong Sell'];
+        const VERDICT_BG = {
+            'Strong Buy':  '#dcfce7',
+            'Buy':         '#bbf7d0',
+            'Neutral':     '#e5e7eb',
+            'Sell':        '#fecaca',
+            'Strong Sell': '#fca5a5',
+        };
+
+        function appendStockCard(stock) {
+            const resultsDiv = document.getElementById('allResults');
+            const sectionId = 'section-' + stock.verdict.replace(/\s+/g, '-');
+
+            let section = document.getElementById(sectionId);
+            if (!section) {
+                // Create the category section in verdict order
+                section = document.createElement('div');
+                section.id = sectionId;
+                section.className = 'category-section';
+                section.innerHTML = `
+                    <div class="category-title" style="background:${VERDICT_BG[stock.verdict]};padding:10px 16px;border-radius:8px;">
+                        ${stock.verdict} (<span id="${sectionId}-count">0</span>)
+                    </div>
+                    <div class="stocks-grid" id="${sectionId}-grid"></div>
+                `;
+
+                // Insert in correct order
+                let inserted = false;
+                const sections = resultsDiv.querySelectorAll('.category-section');
+                for (const existing of sections) {
+                    const existingVerdict = existing.querySelector('.category-title').textContent.trim().replace(/\s*\(\d+\)$/, '');
+                    if (VERDICT_ORDER.indexOf(stock.verdict) < VERDICT_ORDER.indexOf(existingVerdict)) {
+                        resultsDiv.insertBefore(section, existing);
+                        inserted = true;
+                        break;
+                    }
+                }
+                if (!inserted) resultsDiv.appendChild(section);
+            }
+
+            // Increment count
+            const countEl = document.getElementById(`${sectionId}-count`);
+            countEl.textContent = parseInt(countEl.textContent) + 1;
+
+            // Build card
+            const grid = document.getElementById(`${sectionId}-grid`);
+            const card = document.createElement('div');
+            card.className = 'stock-card';
+            card.dataset.score = stock.final_score;
+            card.onclick = () => {
+                document.getElementById('stockInput').value = stock.ticker;
+                switchTab('single');
+                getRecommendation();
+            };
+            const cleanTicker = stock.ticker.replace(/\.(NS|BO)$/, '');
+            card.innerHTML = `
+                <div class="stock-ticker">${cleanTicker}</div>
+                <div class="stock-score">Score: ${stock.final_score.toFixed(1)}</div>
+                <div class="stock-timeframe">${stock.timeframe || ''}</div>
+            `;
+
+            // Insert sorted by score descending
+            const cards = grid.querySelectorAll('.stock-card');
+            let inserted = false;
+            for (const existing of cards) {
+                if (stock.final_score > parseFloat(existing.dataset.score)) {
+                    grid.insertBefore(card, existing);
+                    inserted = true;
+                    break;
+                }
+            }
+            if (!inserted) grid.appendChild(card);
+        }
+
+        function displayAllStocks(data) {
+            const resultsDiv = document.getElementById('allResults');
+            const verdictOrder = ['Strong Buy', 'Buy', 'Neutral', 'Sell', 'Strong Sell'];
+            let html = '';
+
+            verdictOrder.forEach(verdict => {
+                if (data.results[verdict] && data.results[verdict].length > 0) {
+                    const stocks = [...data.results[verdict]].sort((a, b) => b.final_score - a.final_score);
+                    const bg = VERDICT_BG[verdict];
+
+                    html += `
+                    <div class="category-section">
+                        <div class="category-title" style="background:${bg};padding:10px 16px;border-radius:8px;">
+                            ${verdict} (${stocks.length})
+                        </div>
+                        <div class="stocks-grid">
+                    `;
+
+                    stocks.forEach(stock => {
+                        const cleanTicker = stock.ticker.replace(/\.(NS|BO)$/, '');
+                        html += `
+                        <div class="stock-card" data-score="${stock.final_score}"
+                             onclick="document.getElementById('stockInput').value='${stock.ticker}'; switchTab('single'); getRecommendation();">
+                            <div class="stock-ticker">${cleanTicker}</div>
+                            <div class="stock-score">Score: ${stock.final_score.toFixed(1)}</div>
+                            <div class="stock-timeframe">${stock.timeframe || ''}</div>
+                        </div>`;
+                    });
+
+                    html += `</div></div>`;
+                }
+            });
+
+            resultsDiv.innerHTML = html;
+        }
+
+        document.getElementById('stockInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') getRecommendation();
+        });
+
+        async function getRecommendation() {
+            const stock = document.getElementById('stockInput').value.trim();
+            if (!stock) {
+                showError('Please enter a stock name');
+                return;
+            }
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('result').style.display = 'none';
+
+            try {
+                const response = await fetch(`${apiBase}/recommend?stock=${encodeURIComponent(stock)}`);
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.detail || 'Unknown error');
+                }
+                const data = await response.json();
+                displayResult(data);
+            } catch (err) {
+                showError(err.message);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function displayResult(data) {
+            // Verdict box
+            document.getElementById('verdict').textContent = data.verdict;
+            document.getElementById('timeframe').textContent = data.timeframe;
+            document.getElementById('confidence').textContent = data.confidence.toFixed(1);
+            document.getElementById('confidenceFill').style.width = Math.min(data.confidence, 100) + '%';
+
+            // Pillars
+            document.getElementById('fundScore').textContent = data.pillars.fundamental.score.toFixed(1);
+            document.getElementById('fundHighlights').innerHTML = formatHighlights(data.pillars.fundamental.highlights);
+
+            document.getElementById('techScore').textContent = data.pillars.technical.score.toFixed(1);
+            document.getElementById('techHighlights').innerHTML = formatHighlights(data.pillars.technical.highlights);
+
+            document.getElementById('newsScore').textContent = data.pillars.news.score.toFixed(1);
+            document.getElementById('newsHighlights').innerHTML = formatHighlights(data.pillars.news.highlights);
+
+            // Horizons
+            document.getElementById('shortScore').innerHTML = verdictToTag(data.horizons.short.verdict);
+            document.getElementById('shortConf').textContent = data.horizons.short.confidence.toFixed(0);
+
+            document.getElementById('mediumScore').innerHTML = verdictToTag(data.horizons.medium.verdict);
+            document.getElementById('mediumConf').textContent = data.horizons.medium.confidence.toFixed(0);
+
+            document.getElementById('longScore').innerHTML = verdictToTag(data.horizons.long.verdict);
+            document.getElementById('longConf').textContent = data.horizons.long.confidence.toFixed(0);
+
+            // Meta
+            document.getElementById('ticker').textContent = data.ticker;
+            document.getElementById('timestamp').textContent = new Date(data.as_of).toLocaleString();
+
+            // Reason (if confidence < 80%)
+            if (data.reason) {
+                document.getElementById('reason').textContent = data.reason;
+                document.getElementById('reason').style.display = 'block';
+            } else {
+                document.getElementById('reason').style.display = 'none';
+            }
+
+            // Color verdict box based on zone
+            const verdictBox = document.getElementById('verdictBox');
+            const verdict = data.verdict;
+            if (verdict === 'Strong Buy') {
+                verdictBox.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+            } else if (verdict === 'Buy') {
+                verdictBox.style.background = 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)';
+            } else if (verdict === 'Neutral') {
+                verdictBox.style.background = 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)';
+            } else if (verdict === 'Sell') {
+                verdictBox.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+            } else if (verdict === 'Strong Sell') {
+                verdictBox.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+            }
+
+            document.getElementById('result').style.display = 'block';
+        }
+
+        function verdictToTag(verdict) {
+            const map = {
+                'Strong Buy':   ['Strongly Bullish', 'tag-strongly-bullish'],
+                'Buy':          ['Bullish',           'tag-bullish'],
+                'Neutral':      ['Neutral',           'tag-neutral'],
+                'Sell':         ['Bearish',           'tag-bearish'],
+                'Strong Sell':  ['Strongly Bearish',  'tag-strongly-bearish'],
+            };
+            const [label, cls] = map[verdict] || ['Neutral', 'tag-neutral'];
+            return `<span class="horizon-tag ${cls}">${label}</span>`;
+        }
+
+        function formatHighlights(highlights) {
+            if (!highlights || highlights.length === 0) {
+                return '<div class="highlight-item">No highlights</div>';
+            }
+            return highlights.map(h => `<div class="highlight-item">${escapeHtml(h)}</div>`).join('');
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('error');
+            errorEl.textContent = '❌ ' + message;
+            errorEl.style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
