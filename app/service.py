@@ -24,7 +24,16 @@ def recommend(query: str) -> RecommendationResponse:
     ticker = resolve_ticker(query)
 
     # --- Data ---
-    price_df = fetch_history(ticker, period="1y")
+    # If .NS has no data, try .BO (BSE) as fallback for BSE-only listed stocks
+    try:
+        price_df = fetch_history(ticker, period="1y")
+    except ValueError:
+        if ticker.endswith(".NS"):
+            fallback = ticker[:-3] + ".BO"
+            price_df = fetch_history(fallback, period="1y")  # raises if .BO also fails
+            ticker = fallback
+        else:
+            raise
     fundamentals = fetch_fundamentals(ticker)
     news_items = fetch_news(
         ticker,
