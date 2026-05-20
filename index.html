@@ -379,13 +379,68 @@
             border-top: 1px solid #e0e0e0;
         }
 
+        /* ── Search input wrapper with clear button ── */
+        .input-wrap {
+            position: relative;
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrap input {
+            width: 100%;
+            padding-right: 36px; /* room for the × */
+        }
+
+        .clear-btn {
+            position: absolute;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 18px;
+            line-height: 1;
+            padding: 0 4px;
+            cursor: pointer;
+            display: none;
+            width: auto;
+        }
+
+        .clear-btn:hover {
+            color: #555;
+            background: none;
+        }
+
+        /* ── Tab fix: white text on active (blue) tab ── */
+        .tab.active {
+            background: #667eea;
+            color: #fff !important;
+            border-radius: 8px 8px 0 0;
+            border-bottom-color: #667eea;
+        }
+
+        .tab:not(.active):hover {
+            color: #333;
+            background: #f5f5f5;
+            border-radius: 8px 8px 0 0;
+        }
+
+        /* ── Mobile responsive ── */
         @media (max-width: 600px) {
+            body {
+                padding: 0;
+                align-items: flex-start;
+            }
+
             .container {
-                padding: 20px;
+                padding: 20px 16px;
+                border-radius: 0;
+                box-shadow: none;
+                min-height: 100vh;
             }
 
             h1 {
-                font-size: 22px;
+                font-size: 20px;
             }
 
             .verdict-text {
@@ -398,26 +453,64 @@
 
             .input-group {
                 flex-direction: column;
+                gap: 8px;
             }
 
-            button {
+            .input-group > button {
                 width: 100%;
+            }
+
+            .stocks-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .tabs {
+                gap: 4px;
+            }
+
+            .tab {
+                padding: 10px 14px;
+                font-size: 14px;
+                flex: 1;
+                text-align: center;
+            }
+
+            .verdict-box {
+                padding: 20px;
+            }
+
+            .card {
+                padding: 16px;
+            }
+
+            .category-title {
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .stocks-grid {
+                grid-template-columns: repeat(2, 1fr);
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📈 Stock Recommendation Engine</h1>
-        <p class="subtitle">Indian NSE/BSE stocks • Fundamentals + Technicals + News Sentiment</p>
+        <h1>Which stock you need help with?</h1>
 
         <div class="input-group">
-            <input
-                type="text"
-                id="stockInput"
-                placeholder="Enter stock name (e.g., Reliance, TCS, HDFCBANK)"
-                autocomplete="off"
-            >
+            <div class="input-wrap">
+                <input
+                    type="text"
+                    id="stockInput"
+                    placeholder="Enter stock name (e.g., Reliance, TCS, HDFCBANK)"
+                    autocomplete="off"
+                    oninput="toggleClearBtn(this)"
+                    onkeydown="if(event.key==='Enter') getRecommendation()"
+                >
+                <button class="clear-btn" id="clearBtn" onclick="clearInput()" title="Clear">✕</button>
+            </div>
             <button onclick="getRecommendation()">Analyze</button>
         </div>
 
@@ -508,6 +601,17 @@
 
     <script>
         const apiBase = '';
+
+        function toggleClearBtn(input) {
+            document.getElementById('clearBtn').style.display = input.value ? 'block' : 'none';
+        }
+
+        function clearInput() {
+            const input = document.getElementById('stockInput');
+            input.value = '';
+            document.getElementById('clearBtn').style.display = 'none';
+            input.focus();
+        }
 
         function switchTab(tabName) {
             // Hide all tabs
