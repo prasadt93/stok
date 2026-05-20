@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -55,6 +56,21 @@ NIFTY_100 = [
 ]
 
 
+def _recommend_with_retry(ticker: str, max_retries: int = 2) -> object:
+    """Call recommend() with exponential backoff on rate-limit errors."""
+    for attempt in range(max_retries + 1):
+        try:
+            return recommend(ticker)
+        except Exception as e:
+            err_str = str(e).lower()
+            is_rate_limit = "rate limit" in err_str or "too many requests" in err_str or "429" in err_str
+            if is_rate_limit and attempt < max_retries:
+                wait = 2 ** attempt * 3  # 3s, then 6s
+                time.sleep(wait)
+                continue
+            raise
+
+
 @app.get("/nifty100/stream")
 def stream_nifty100():
     """Stream per-stock results via Server-Sent Events."""
@@ -66,7 +82,7 @@ def stream_nifty100():
 
         for idx, ticker in enumerate(NIFTY_100, start=1):
             try:
-                rec = recommend(ticker)
+                rec = _recommend_with_retry(ticker)
                 entry = {
                     "ticker": rec.ticker,
                     "verdict": rec.verdict,
@@ -84,6 +100,13 @@ def stream_nifty100():
                 payload = json.dumps({"type": "progress", "done": idx, "total": total, "stock": None, "ticker": ticker, "error": str(e)})
 
             yield f"data: {payload}\n\n"
+
+            # Pace requests to avoid yfinance rate limiting on hosted servers
+            time.sleep(0.5)
+
+            # Keep-alive comment every 10 stocks (prevents proxy/Render timeouts)
+            if idx % 10 == 0:
+                yield ": keep-alive\n\n"
 
         final = json.dumps({
             "type": "done",
