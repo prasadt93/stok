@@ -1,8 +1,11 @@
 """Resolve a human-entered stock name/symbol to a yfinance ticker for Indian markets."""
 from __future__ import annotations
 
+import json
 import re
+from datetime import datetime, timedelta
 from functools import lru_cache
+from pathlib import Path
 
 import yfinance as yf
 
@@ -39,20 +42,72 @@ COMMON_ALIASES = {
     "powergrid": "POWERGRID.NS",
     "yes bank": "YESBANK.NS",
     "yesbank": "YESBANK.NS",
+    "vedanta": "VEDL.NS",
+    "vedl": "VEDL.NS",
 }
+
+# Persistent cache for ticker validation (survives process restarts)
+_CACHE_FILE = Path(__file__).parent.parent / ".ticker_cache.json"
+_CACHE_TTL_HOURS = 24
 
 
 def _normalize(name: str) -> str:
     return re.sub(r"\s+", " ", name.strip().lower())
 
 
+def _load_cache() -> dict:
+    """Load ticker validation cache from disk."""
+    if not _CACHE_FILE.exists():
+        return {}
+    try:
+        with open(_CACHE_FILE) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def _save_cache(cache: dict) -> None:
+    """Save ticker validation cache to disk."""
+    try:
+        _CACHE_FILE.write_text(json.dumps(cache, indent=2))
+    except Exception:
+        pass  # Silent fail if we can't write cache
+
+
+def _is_cache_valid(timestamp: float) -> bool:
+    """Check if a cache entry is still valid (not expired)."""
+    age_hours = (datetime.now().timestamp() - timestamp) / 3600
+    return age_hours < _CACHE_TTL_HOURS
+
+
 @lru_cache(maxsize=256)
 def _validate_ticker(symbol: str) -> bool:
+    """Validate a ticker symbol using cached + yfinance validation.
+
+    Uses persistent disk cache to avoid repeated yfinance calls.
+    Falls back to yfinance if cache miss or cache expired.
+    """
+    cache = _load_cache()
+
+    # Check if we have a valid cached result
+    if symbol in cache:
+        entry = cache[symbol]
+        if _is_cache_valid(entry.get("timestamp", 0)):
+            return entry.get("valid", False)
+
+    # Validate via yfinance
     try:
         info = yf.Ticker(symbol).info or {}
     except Exception:
-        return False
-    return bool(info.get("regularMarketPrice") or info.get("currentPrice") or info.get("previousClose"))
+        valid = False
+    else:
+        valid = bool(info.get("regularMarketPrice") or info.get("currentPrice") or info.get("previousClose"))
+
+    # Update cache
+    cache[symbol] = {"valid": valid, "timestamp": datetime.now().timestamp()}
+    _save_cache(cache)
+
+    return valid
 
 
 def resolve_ticker(query: str) -> str:
