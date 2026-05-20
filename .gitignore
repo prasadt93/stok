@@ -21,3 +21,6 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# Cache files
+.ticker_cache.json
